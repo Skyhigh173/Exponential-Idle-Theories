@@ -18,7 +18,8 @@ var authors = "skyhigh173#3120";
 var version = 1;
 
 // currency
-var rho, dotrho;
+var rho;
+var dotrho = BigNumber.ZERO;
 
 // upgrades
 var n,a,b;
