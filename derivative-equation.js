@@ -15,7 +15,7 @@ you can buy upgrades to make f(x) and x gain more powerful but reset x.\n\
 feeling slow? Try idling.\
 ";
 var authors = "skyhigh173#3120";
-var version = 1;
+var version = 2;
 
 // currency
 var rho;
@@ -30,18 +30,25 @@ var x = BigNumber.ZERO;
 // perm
 var capX;
 
+// milestone
+var extraCap, nExp;
+
 // func
 var getA = (level=a.level) => Utils.getStepwisePowerSum(level, 2.2, 5, 0);
 var getB = (level=b.level) => Utils.getStepwisePowerSum(level, 3, 7, 0);
 var getN = (level=n.level) => BigNumber.TWO.pow(level * 0.3); //Utils.getStepwisePowerSum(level, 2.4, 8, 2) / BigNumber.TWO;
-var getCapX = (level=capX.level) => BigNumber.from(1024) * BigNumber.FIVE.pow(level);
+var getCapX = (level=capX.level) => BigNumber.from(1024) * getExtraCapX().pow(level);
+var getExtraCapX = () => BigNumber.from(5 + extraCap.level * 4);
+var getNExp = () => BigNumber.from(1.2 - 0.6 * nExp.level);
 
 var isCappedX = () => x >= getCapX();
+var isTauOver = (over) => theory.tau.pow(5) >= BigNumber.from(over);
 
 var get2DGraphValue = () => rho.value.sign * (BigNumber.ONE + rho.value.abs()).log10().toNumber();
 var getPublicationMultiplier = (tau) => tau.pow(0.8) / BigNumber.TWO;
 var getPublicationMultiplierFormula = (symbol) => "\\frac{{" + symbol + "}^{0.8}}{2}";
-var getTau = () => rho.value.pow(0.2);
+var getTau = () => rho.value.pow(BigNumber.from(0.2));
+var getCurrencyFromTau = (tau) => [tau.pow(5), rho.symbol];
 
 var resetX = () => {
   x = BigNumber.ZERO;
@@ -96,10 +103,24 @@ var init = () => {
   // capX
   {
     capX = theory.createPermanentUpgrade(3, rho, new ExponentialCost(1e7, 12));
-    capX.getDescription = (_) => "$\\times x\\text{'s cap by } 5$";
-    capX.getInfo = (amount) => `$\\times 1 \\rightarrow \\times ${BigNumber.FIVE.pow(amount).toString(0)} \\text{ (cap:${getCapX()})}$`
+    capX.getDescription = (amount) => `$\\times x\\text{'s cap by } ${getExtraCapX().pow(amount).toString(0)}$`;
+    capX.getInfo = (amount) => `$\\times 1 \\rightarrow \\times ${getExtraCapX().pow(amount).toString(0)} \\text{ (cap:${getCapX()})}$`
     capX.boughtOrRefunded = (_) => resetX();
   }
+
+  theory.setMilestoneCost(new LinearCost(4, 4));
+
+    {
+      extraCap = theory.createMilestoneUpgrade(0, 4);
+      extraCap.description = Localization.getUpgradeIncCustomDesc("x \\text{'s cap multiplier} ", "4");
+      extraCap.info = "increase $x$'s cap multiplier by 4"
+    }
+    {
+      nExp = theory.createMilestoneUpgrade(1, 2);
+      nExp.getDescription = () => nExp.level == 1 ? "no longer ${\\div n^{0.6}}$" : "$\\downarrow n$'s exponent by $0.6$";
+      nExp.getInfo = () => nExp.level == 1 ? "no longer $\\div n$ in $\\dot{x}$ term" : "decrease $n$'s exponent by $0.6$ in $\\dot{x}$ term"
+      nExp.boughtOrRefunded = (_) => theory.invalidateSecondaryEquation();
+    }
 }
 
 var getPrimaryEquation = () => {
@@ -114,11 +135,14 @@ var getPrimaryEquation = () => {
   return r;
 }
 var getSecondaryEquation = () => {
-  let r = "\\dot{x} = n\\ln\\left(\\max\\left(\\frac{a}{n^2},e\\right)\\right)";
+  let e = getNExp();
+  let nExpText = e == BigNumber.ZERO ? "a" : `\\frac{a}{n^{${e.toString(1)}}}`
+  let r = `\\dot{x} = n\\ln\\left(\\max\\left(${nExpText},e\\right)\\right)`;
   
   return r;
 }
 var getTertiaryEquation = () => {
+  
   return `\\dot{\\rho} = ${dotrho.toString(1)} \\qquad x = ${x.toString(1)} ${isCappedX() ? `\\text{ (capped at ${getCapX().toString()})}` : ""}`;
 }
 
@@ -138,15 +162,16 @@ var tick = (elapsedTime, multiplier) => {
   rho.value += dotrho * dt * bonus;
 
   if (rho.value != BigNumber.ZERO) {
-    x += getN() * (BigNumber.E.max(getA()/(getN().pow(BigNumber.TWO)))).log() * dt;
+    x += getN() * (BigNumber.E.max(getA()/(getN().pow(getNExp())))).log() * dt;
     if (isCappedX()) {
       x = getCapX();
     }
   }
 
   theory.invalidateTertiaryEquation();
-  capX.isAvailable = theory.tau >= BigNumber.TEN; // 10^5
+  capX.isAvailable = isTauOver(1e7);
 }
 
 
 init();
+
