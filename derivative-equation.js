@@ -42,7 +42,7 @@ var getB = (level=b.level) => Utils.getStepwisePowerSum(level, 3, 7, 0);
 var getC = (level=c.level) => Utils.getStepwisePowerSum(level, 1.8, 11, 0) / BigNumber.TWO;
 var getN = (level=n.level) => BigNumber.TWO.pow(level * 0.3); //Utils.getStepwisePowerSum(level, 2.4, 8, 2) / BigNumber.TWO;
 var getCapX = (level=capX.level) => BigNumber.from(1024) * getExtraCapX().pow(level);
-var getExtraCapX = () => BigNumber.from(5 + extraCap.level * 4);
+var getExtraCapX = () => BigNumber.from(5 + extraCap.level * 3);
 var getNExp = () => BigNumber.from(1.2 - 0.6 * nExp.level);
 
 var isCappedX = () => x >= getCapX();
@@ -133,8 +133,8 @@ var init = () => {
 
     {
       extraCap = theory.createMilestoneUpgrade(0, 4);
-      extraCap.description = Localization.getUpgradeIncCustomDesc("x \\text{'s cap multiplier} ", "4");
-      extraCap.info = "increase $x$'s cap multiplier by 4"
+      extraCap.description = Localization.getUpgradeIncCustomDesc("x \\text{'s cap multiplier} ", "3");
+      extraCap.info = "increase $x$'s cap multiplier by 3"
     }
     {
       nExp = theory.createMilestoneUpgrade(1, 2);
@@ -157,8 +157,8 @@ var getPrimaryEquation = () => {
   
   let r = "\\begin{matrix}";
   r += "\\dot{\\rho} = n \\frac{d}{dx} f(x) \\\\";
-  r += "f(w) = aw + bw^{2}";
-  if (c.isAvailable) {r += " + \\frac{cw^{3}}{\\log_{1.1}(\\max(\\rho,2))}"}
+  r += "f(x) = ax + bx^{2}";
+  if (c.isAvailable) {r += " + \\frac{cx^{3}}{\\log_{1.1}(\\max(\\rho,2))}"}
   r += "\\end{matrix}";
 
   return r;
