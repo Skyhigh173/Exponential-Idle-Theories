@@ -39,7 +39,7 @@ var extraCap, nExp, cMS;
 // func
 var getA = (level=a.level) => Utils.getStepwisePowerSum(level, 2.2, 5, 0);
 var getB = (level=b.level) => Utils.getStepwisePowerSum(level, 3, 7, 0);
-var getC = (level=c.level) => Utils.getStepwisePowerSum(level, 1.8, 10, 0);
+var getC = (level=c.level) => Utils.getStepwisePowerSum(level, 1.8, 11, 0) / BigNumber.TWO;
 var getN = (level=n.level) => BigNumber.TWO.pow(level * 0.3); //Utils.getStepwisePowerSum(level, 2.4, 8, 2) / BigNumber.TWO;
 var getCapX = (level=capX.level) => BigNumber.from(1024) * getExtraCapX().pow(level);
 var getExtraCapX = () => BigNumber.from(5 + extraCap.level * 4);
