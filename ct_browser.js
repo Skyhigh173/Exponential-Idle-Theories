@@ -228,8 +228,8 @@ var getUIDelegate = () => {
             }),
             ui.createGrid({
               columnDefinitions: ['0*','10*'],
-              minimumHeightRequest: 40,
-              heightRequest: 40,
+              minimumHeightRequest: 25*(ui.screenHeight/667),
+              heightRequest: 25*(ui.screenHeight/667),
               children:[
                 ui.createButton({
                   text: () => isShowed ? '^' : 'v',
