@@ -21,11 +21,13 @@ function occurrences(e,n,r){if(e+="",(n+="").length<=0)return e.length+1;for(var
 var tag = {
   ct: "custom theory",
   ui_ct: "UI based custom theory",
-  auto: "automator"
+  auto: "automator",
+  other: "other/fun",
+  troll: "TROLL"
 }
  
 var cts = [
-  {name: 'QOL theory',author: 'Eaux Tacous#1021', tag:tag.auto, description: 'A theory that automates the game process.\n\nFeatures:\n- auto reallocation of starts and students\n- auto publish theory & purchase theory variables', link:'https://raw.githubusercontent.com/1ekf/ex_QoL/testing/QoL_Theory.js'},
+  {name: 'QOL theory', author: 'Eaux Tacous#1021', tag:tag.auto, description: 'A theory that automates the game process.\n\nFeatures:\n- auto reallocation of starts and students\n- auto publish theory & purchase theory variables', link:'https://raw.githubusercontent.com/1ekf/ex_QoL/testing/QoL_Theory.js'},
   {name: 'Sinusoidal Theory', author: '71-073~#7380', description: 'A theory where you have to pay attention to sinusoidal changes in your function. Buying any upgrades reverts time to its last multiple of π, allowing the function value to stay centered approximately at 0.', link: 'https://raw.githubusercontent.com/71M073J/CTs/master/SinusoidalTheory.js'},
   {name: 'Spirals Theory', author: 'EdgeOfDreams#4525', description: 'Swirly picture go brr\na theory with beautiful 3D shapes', link: 'https://raw.githubusercontent.com/dhebert/ExIdle-custom-theory/master/SpiralsTheory.js'},
   {name: 'Basic Theory', author: 'invalid-user#2123', description: 'This theory leads to a beautiful conclusion and is based off of the basic starter theory you get when making custom theories. It has a LOT of story chapters but you\'ll be satisfied in the end :) ouo.', link: 'https://raw.githubusercontent.com/atrainstudios/exidlebasictheory/main/CustomTheory.js'},
@@ -49,7 +51,13 @@ var cts = [
   {name: 'Derivative Equation', author:'skyhigh173#3120', description: "A simple theory with a single function - f(x)\nx increases over time,\nhowever with caps.\nyou can buy upgrades to make f(x) and x gain more powerful but reset x.\n\nfeeling slow? try idling.", link: 'https://raw.githubusercontent.com/Skyhigh173/Exponential-Idle-Theories/main/derivative-equation.js'},
   {name: 'Antimatter Dimensions', author:'skyhigh173#3120', description: "ANTIMATTER DIMENSIONS but in exp idle.\nstage: 1 - 1.79e308 antimatter\noriginal game : https://ivark.github.io", tag:tag.ui_ct, link: 'https://raw.githubusercontent.com/Skyhigh173/Antimatter-Dimensions-EXPV/main/ad.js'},
   {name: 'Collatz Conjecture', author:'propfeds, Cipher#9599, XLII#0042', description: "puzzle revolving around trying to counteract the even clause of the Collatz Conjecture.\n\n 'If it's odd, take triple and one,\nIf it's even, cut that in two.\n\nIf you woke up with a bread in hand,\nwhat would you do?'", link: 'https://raw.githubusercontent.com/propfeds/collatz-conjecture/dev/collatz.js'},
-  //{name: '', author:'', description: "", link: ''},
+  {name: 'Custom Theory Browser', author:'skyhigh173', description: "CT browser in CT browser\ncuz why not?", tag: tag.other, link: 'https://raw.githubusercontent.com/Skyhigh173/Exponential-Idle-Theories/main/ct_browser.js'},
+  {name: 'Sudoku Theory', author:'AfuroZamurai#2624', description: "A minigame theory which allows you to play different difficulties of sudoku (alpha version, still missing a lot of the ultimately planned features)", tag: tag.ui_ct, link: 'https://raw.githubusercontent.com/AfuroZamurai/custom-theories/dev/nonofficial/Sudoku_alpha.js'},
+  {name: 'Lemma\'s Garden', author:'propfeds#5988', description: "Last night, Lemma swept away the rubbles of her old garden. You are her first student in a long while.", tag: tag.ui_ct, link: 'https://raw.githubusercontent.com/propfeds/lemmas-garden/v0.0.3/theory.js'},
+  {name: 'Laplace Transform', author:'lrobt97', description: "A custom theory based on Laplace transforms.", tag: tag.ui_ct, link: 'https://raw.githubusercontent.com/lrobt97/Laplace-Transform/main/theory.js'},
+  {name: 'Pong Theory', author:'71~073~#7380', description: "Pong in Exponential Idle. Yes, you read that right.", tag: tag.ui_ct, link: 'https://raw.githubusercontent.com/71M073J/CTs/master/pongTheory.js'},
+  {name: 'Logistic Function pet ouo', author:'skyhigh173', description: "yeah, t5 pet", tag:tag.troll,link: 'https://raw.githubusercontent.com/Skyhigh173/theory-sdk/main/samples/T5-LogisticFunction.js'},
+  //{name: '', author:'', description: "", tag: '', link: ''},
 ];
 
 // @ => \n , & => \\dot{\\rho}
@@ -99,16 +107,14 @@ var selectType = 0;
 function popupInfo(i){
 
     Sound.playClick();
+    let tags = showCT[i].tag == undefined ? "custom theory" : showCT[i].tag;
     let h = showCT[i].description;
     let desc = ui.createLabel({
-        text: h + '\n',
+        text: h + (tags === tag.troll ? '\n\nTHIS IS A TROLL THEORY. DO NOT DOWNLOAD THIS IN YOUR MAIN SAVE. IT MAY LOCK YOUR GAME.' : ''),
         horizontalOptions: LayoutOptions.CENTER,
         //verticalOptions: LayoutOptions.CENTER,
         fontSize:16
     });
-
-    let tags = showCT[i].tag == undefined ? "custom theory" : showCT[i].tag;
-
     
     h = Math.max(Math.min((h.length / 40 + occurrences(h,'\n',false)) * 20,175),40);
   
