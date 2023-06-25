@@ -120,13 +120,14 @@ var init = () => {
     capX.boughtOrRefunded = (_) => resetX();
   }
 
-  // dev
+  /* dev
   {
     dev.rho = theory.createPermanentUpgrade(4, rho, new FreeCost());
     dev.rho.getDescription = (amount) => `dev : $\\times 1e10 \\rho$`;
     dev.rho.getInfo = (amount) => `will remove soon`;
     dev.rho.boughtOrRefunded = (_) => {rho.value *= BigNumber.from(1e10)};
   }
+  */
 
   theory.setMilestoneCost(new LinearCost(2, 2.5));
   // 1e20, e25
