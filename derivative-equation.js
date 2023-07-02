@@ -223,7 +223,7 @@ var init = () => {
       cMS.getDescription = () => "Unlock $c$";
       cMS.getInfo = () => "Unlock new variable $c$"
       cMS.boughtOrRefunded = (_) => theory.invalidatePrimaryEquation();
-      cMS.canBeRefunded = (_) => false;
+      cMS.canBeRefunded = (_) => c.level == 0 && coshT.level == 0;
     }
     {
       coshT = theory.createMilestoneUpgrade(3, 1);
@@ -295,7 +295,7 @@ var tick = (elapsedTime, multiplier) => {
   theory.invalidatePrimaryEquation();
   theory.invalidateTertiaryEquation();
   cMS.isAvailable = isMaxRhoOver(1e80);
-  coshT.isAvailable = isMaxRhoOver(1e245);
+  coshT.isAvailable = cMS.level > 0 && isMaxRhoOver(1e245);
   q2Cap.isAvailable = isMaxRhoOver('1e500') && coshT.level > 0;
   q2.maxLevel = 250 + q2Cap.level * 50;
   c.isAvailable = cMS.level > 0;
