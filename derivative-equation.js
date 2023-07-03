@@ -13,10 +13,10 @@ however there is cap. \n\
 you can buy upgrades to make f(x) and x more powerful but reset x.\n\
 \n\
 Active or Idle? You can decide on your own.\n\n\
-DEV VERSION : 4.1\
+DEV VERSION : 4\
 ";
 var authors = "skyhigh173";
-var version = 4.1;
+var version = 4;
 
 // currency
 var rho;
@@ -243,14 +243,14 @@ var init = () => {
 }
 
 var getPrimaryEquation = () => {
-  theory.primaryEquationHeight = 60;
+  theory.primaryEquationHeight = 85;
   theory.primaryEquationScale = 1;
   
   let r = "\\begin{matrix}";
   r += `\\dot{\\rho} = n f(x) ${coshT.level > 0 ? '\\log(10+g)' : ''}  \\\\`;
   r += "f(x) = \\frac{d}{dx} \\left(ax + bx^{2}";
   if (c.isAvailable) {r += " + \\frac{cx^{3}}{\\log_{1.1}(\\max(\\rho,2))}\\right)"} else { r += '\\right)'}
-  if (coshT.level > 0) r += `\\qquad g = \\frac{d}{dx}(\\cosh(\\frac{q_1q_2}{c}))`;
+  if (coshT.level > 0) r += `\\\\ g = \\frac{d}{dx}(\\cosh(\\frac{q_1q_2}{c}))`;
   r += "\\end{matrix}";
 
   return r;
