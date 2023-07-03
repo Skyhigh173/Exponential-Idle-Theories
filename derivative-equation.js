@@ -13,10 +13,10 @@ however there is cap. \n\
 you can buy upgrades to make f(x) and x more powerful but reset x.\n\
 \n\
 Active or Idle? You can decide on your own.\n\n\
-DEV VERSION : 4\
+DEV VERSION : 4.1\
 ";
 var authors = "skyhigh173";
-var version = 4;
+var version = 4.1;
 
 // currency
 var rho;
@@ -82,8 +82,8 @@ var init = () => {
 
   // n
   {
-    let getDesc = (level) => "n = " + getN(level).toString(2);
-    let getInfo = (level) => `n = 2^{${BigNumber.from(0.3 * level).toString(1)}}`
+    let getInfo = (level) => "n = " + getN(level).toString(2);
+    let getDesc = (level) => `n = 2^{${BigNumber.from(0.3 * level).toString(1)}}`
     n = theory.createUpgrade(0, rho, new ExponentialCost(200, Math.log2(2.2)));
     n.getDescription = (_) => Utils.getMath(getDesc(n.level));
     n.getInfo = (amount) => Utils.getMathTo(getInfo(n.level), getInfo(n.level + amount));
@@ -256,6 +256,7 @@ var getPrimaryEquation = () => {
   return r;
 }
 var getSecondaryEquation = () => {
+  theory.secondaryEquationScale = 0.95
   let e = getNExp();
   let nExpText = e == BigNumber.ZERO ? "a" : `\\frac{a}{n^{${e.toString(1)}}}`
   let r = `\\dot{x} = \\left\\{x < \\theta : n\\ln\\left(\\max\\left(${nExpText},e\\right)\\right) , \\theta - x \\right\\}`;
@@ -315,14 +316,14 @@ var ach_x_3 = theory.createAchievement(102, ach_0, "POWER", "reach x = 1e10", ()
 var ach_x_4 = theory.createAchievement(103, ach_0, "even faster than light speed", "reach x = 1e15", () => x >= BigNumber.from(1e15));
 var ach_x_5 = theory.createAchievement(104, ach_0, "e'X'ponential growth", "reach x = 1e50", () => x >= BigNumber.from(1e50));
 var ach_x_6 = theory.createAchievement(105, ach_0, "it justs keep growing...", "reach x = 1e150", () => x >= BigNumber.from(1e150));
-var ach_x_7 = theory.createAchievement(106, ach_0, "No way, you can get infinity?", "reach x = 1.79e308 (JS Infinity)", () => x >= BigNumber.TWO.pow(1024));
+var ach_x_7 = theory.createAchievement(106, ach_0, "No way, you can reach infinity?", "reach x = 1e200", () => x >= BigNumber.from(1e200));
 var ach_rho_1 = theory.createAchievement(200, ach_1, "f(x) = x^2", "reach 1e10 rho", () => rho.value >= BigNumber.from(1e10));
 var ach_rho_2 = theory.createAchievement(201, ach_1, "g(x) = 2^x", "reach 1e25 rho", () => rho.value >= BigNumber.from(1e25));
 var ach_rho_3 = theory.createAchievement(202, ach_1, "why did my rho explodes?", "reach 1e50 rho", () => rho.value >= BigNumber.from(1e50));
 var ach_rho_4 = theory.createAchievement(203, ach_1, "nice number", "reach 6.9e69 rho", () => rho.value >= BigNumber.from(6.9e69));
 var ach_rho_5 = theory.createAchievement(204, ach_1, "like jumping into the rocket", "reach 1e100 rho", () => rho.value >= BigNumber.from(1e100));
 var ach_rho_6 = theory.createAchievement(205, ach_1, "IT'S OVER CENTILLION!!!", "reach 1e303 rho", () => rho.value >= BigNumber.from('1e303'));
-var ach_rho_7 = theory.createAchievement(206, ach_1, "No way, you can get eternity?", "reach 3.23e616 rho ((2^1024)^2)", () => rho.value >= BigNumber.TWO.pow(1024).pow(2));
+var ach_rho_7 = theory.createAchievement(206, ach_1, "No way, you can reach eternity?", "reach 3.23e616 rho ((2^1024)^2)", () => rho.value >= BigNumber.TWO.pow(1024).pow(2));
 var ach_rho_8 = theory.createAchievement(207, ach_1, "I feel like it is decaying", "reach 1e500 rho", () => rho.value >= BigNumber.from('1e500'));
 var ach_rho_9 = theory.createAchievement(208, ach_1, "Googol to the power of ten", "reach 1e1000 rho", () => rho.value >= BigNumber.from('1e1000'));
 var ach_mile_1 = theory.createAchievement(301, ach_2, "DLC required", "unlock first milestone", () => rho.value >= BigNumber.from(1e20));
@@ -337,7 +338,7 @@ var ach_sec1 = theory.createSecretAchievement(1000,ach_s , 'I thought it would b
 
 init();
 
-var canResetStage = () => isMaxRhoOver('1e245');
+var canResetStage = () => isMaxRhoOver('1e50');
 var getResetStageMessage = () => `You can perform a reset when your rho is stuck. You WILL NOT get any award IF your current tau value is lower than pevious publication's.`
 var resetStage = () => {
   if (theory.canPublish) {
