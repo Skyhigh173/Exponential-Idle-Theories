@@ -34,7 +34,7 @@ var init = () => {
 
   // a
   {
-    let getDesc = (level) => `a=${5.3+aBase.level*0.3}^{` + (level == 0 ? "" : "-") + level + "}";
+    let getDesc = (level) => `a=${Math.round((5.3+aBase.level*0.3)*10)/10}^{` + (level == 0 ? "" : "-") + level + "}";
     //let getInfo = (level) => "a=" + (5.3+aBase.level*0.3) ** (-level);//getA(level).toString();
     a = theory.createUpgrade(0, currency, new ExponentialCost(20, Math.log2(30)));
     a.getDescription = (amount) => Utils.getMath(getDesc(a.level));
@@ -127,11 +127,11 @@ var tick = (elapsedTime, multiplier) => {
 }
 
 var getA = (level = a.level)  =>  BigNumber.from(5.3+0.3*aBase.level).pow(-level);
-var getPB = (level = b.level) => Utils.getStepwisePowerSum(level, 2, 12, 0);
-var getB = (level = b.level)  => Utils.getStepwisePowerSum(level, 2, 12, 0) * (level % 2 == 0 ? BigNumber.ONE : -BigNumber.ONE);
-var getC = (level = c.level)  => -Utils.getStepwisePowerSum(level, 2, 10, 0);
-var getQ1 = (level = q1.level) => Utils.getStepwisePowerSum(level, 2, 10, 0);
-var getQ2 = (level = q2.level) => Utils.getStepwisePowerSum(level, 2, 10, 1);
+var getPB = (level = b.level) => Utils.getStepwisePowerSum(level, 2, 10, 0);
+var getB = (level = b.level)  => Utils.getStepwisePowerSum(level, 2, 10, 0) * (level % 2 == 0 ? BigNumber.ONE : -BigNumber.ONE);
+var getC = (level = c.level)  => -Utils.getStepwisePowerSum(level, 3, 10, 0);
+var getQ1 = (level = q1.level) => Utils.getStepwisePowerSum(level, 2, 8, 0);
+var getQ2 = (level = q2.level) => Utils.getStepwisePowerSum(level, 3, 10, 1);
 
 var getPublicationMultiplier = (tau) => tau.pow(0.225) / BigNumber.TEN;
 var getPublicationMultiplierFormula = (symbol) => "\\frac{{" + symbol + "}^{0.225}}{10}";
