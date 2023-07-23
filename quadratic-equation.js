@@ -84,9 +84,13 @@ var init = () => {
   theory.setMilestoneCost(new LinearCost(25, 25));
   {
     let getBase = lv => Math.round((5.3 + 0.3 * lv) * 10) / 10;
+    let getDesc = lv => return `a = ${getBase(lv)}^{-\\text{level}}`
     aBase = theory.createMilestoneUpgrade(0, 2);
-    aBase.getDescription = (_) => Utils.getMathTo(`${getBase(aBase.level)}^{\\text{level}}`,`${getBase(aBase.level+1)}^{\\text{level}}`)
-    aBase.getInfo = (_) => Utils.getMath("\\uparrow a \\text{'s base by } 0.3")
+    aBase.getInfo = (_) => {
+      if (aBase.level == 2) return getDesc(2);
+      return Utils.getMathTo(getDesc(aBase.level),getDesc(aBase.level+1))
+    }
+    aBase.getDescription = (_) => Utils.getMath("\\uparrow a \\text{'s base by } 0.3")
     aBase.boughtOrRefunded = (_) => theory.invalidatePrimaryEquation();
   }
   {
