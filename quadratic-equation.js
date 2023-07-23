@@ -87,7 +87,7 @@ var init = () => {
     let getDesc = lv => `a = ${getBase(lv)}^{-\\text{level}}`;
     aBase = theory.createMilestoneUpgrade(0, 2);
     aBase.getInfo = (_) => {
-      if (aBase.level == 2) return getDesc(2);
+      if (aBase.level == 2) return Utils.getMath(getDesc(2));
       return Utils.getMathTo(getDesc(aBase.level),getDesc(aBase.level+1));
     }
     aBase.getDescription = (_) => Utils.getMath("\\uparrow a \\text{'s base by } 0.3");
