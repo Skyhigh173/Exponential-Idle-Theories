@@ -6,17 +6,19 @@ import { Utils } from "./api/Utils";
 
 var id = "derivative_equation";
 var name = "Derivative Equation";
-var description = "\
-A simple theory.\n\
-x increase over time,\n\
-however there is cap. \n\
-you can buy upgrades to make f(x) and x more powerful but reset x.\n\
+var description = "Derivative Equation --\n\
 \n\
-Active or Idle? You can decide on your own.\n\n\
-DEV VERSION : 4\
+x grows continuously over time,\n\
+approaching to an limit.\n\
+\n\
+Purchase upgrades to accelerate ρ production,\n\
+at the cost of resetting x.\n\
+\n\
+Optimize actively or progress passively,\n\
+decide on your own.\
 ";
 var authors = "skyhigh173";
-var version = 4;
+var version = 5;
 
 // currency
 var rho;
@@ -36,6 +38,9 @@ var dev = {}
 
 // milestone
 var extraCap, nExp, cMS;
+
+// secret
+var resetCount = 0;
 
 // func
 var getA = (level=a.level) => Utils.getStepwisePowerSum(level, 2.2, 5, 0);
@@ -66,6 +71,10 @@ var resetX = () => {
 
 var postPublish = () => {
   resetX();
+}
+
+var prePublish = () => {
+  resetCount = 0;
 }
 
 var getInternalState = () => {
@@ -162,7 +171,7 @@ var init = () => {
   }
 
   {
-    let getDesc = (level) => "\\theta = " + getCapX(level).toString(0);
+    let getDesc = (level) => "\\max x = " + getCapX(level).toString(0);
     capX = theory.createUpgrade(13, rho, new CompositeCost(47,new ExponentialCost(1e7, 12),new ExponentialCost(1e175, 16)));
     capX.getDescription = (_) => Utils.getMath(getDesc(capX.level));
     capX.getInfo = (amount) => Utils.getMathTo(getDesc(capX.level), getDesc(capX.level + amount));
@@ -209,8 +218,8 @@ var init = () => {
 
     {
       extraCap = theory.createMilestoneUpgrade(0, 4);
-      extraCap.description = Localization.getUpgradeIncCustomDesc("x \\text{'s cap multiplier} ", "3");
-      extraCap.info = "increase $x$'s cap multiplier by 3"
+      extraCap.description = Localization.getUpgradeIncCustomDesc("\\max x \\text{ base multiplier} ", "3");
+      extraCap.getInfo = () => `$\\max x = 1024 \\times ${getExtraCapX().toString(0)}^{\\text{level}}$`;
     }
     {
       nExp = theory.createMilestoneUpgrade(1, 2);
@@ -243,14 +252,14 @@ var init = () => {
 }
 
 var getPrimaryEquation = () => {
-  theory.primaryEquationHeight = 85;
+  theory.primaryEquationHeight = 100;
   theory.primaryEquationScale = 1;
   
   let r = "\\begin{matrix}";
-  r += `\\dot{\\rho} = n f(x) ${coshT.level > 0 ? '\\log(10+g)' : ''}  \\\\`;
-  r += "f(x) = \\frac{d}{dx} \\left(ax + bx^{2}";
-  if (c.isAvailable) {r += " + \\frac{cx^{3}}{\\log_{1.1}(\\max(\\rho,2))}\\right)"} else { r += '\\right)'}
-  if (coshT.level > 0) r += `\\\\ g = \\frac{d}{dx}(\\cosh(\\frac{q_1q_2}{c}))`;
+  r += `\\frac{d\\rho}{dt} = n f'(x) ${coshT.level > 0 ? '\\log(g(\\frac{q_1q_2}{c}))' : ''}  \\\\\\\\`;
+  r += "f(x) = ax + bx^{2}";
+  if (c.isAvailable) {r += " + \\frac{cx^{3}}{\\log_{1.1}(2+\\rho)}"}
+  if (coshT.level > 0) r += `\\\\ g(x) = 10 + \\frac{d}{dx}\\cosh(x)`;
   r += "\\end{matrix}";
 
   return r;
@@ -259,13 +268,14 @@ var getSecondaryEquation = () => {
   theory.secondaryEquationScale = 0.95
   let e = getNExp();
   let nExpText = e == BigNumber.ZERO ? "a" : `\\frac{a}{n^{${e.toString(1)}}}`
-  let r = `\\dot{x} = \\left\\{x < \\theta : n\\ln\\left(\\max\\left(${nExpText},e\\right)\\right) , \\theta - x \\right\\}`;
+  //let r = `\\frac{dx}{dt} = \\left\\{x < \\theta : n\\ln\\left(\\max\\left(${nExpText},e\\right)\\right) , \\theta - x \\right\\}`;
+    let r = `\\frac{dx}{dt} = n\\ln\\left(\\max\\left(${nExpText},e\\right)\\right)`;
   r += `\\qquad ${theory.latexSymbol} = \\max \\rho^{0.1}`;
   return r;
 }
 var getTertiaryEquation = () => {
-  
-  return `\\dot{\\rho} = ${dotrho.toString(1)} ${coshT.level > 0 ? `\\qquad \\log(10+g) = ${getG()}`: ''} \\qquad x = ${x.toString(1)} ${isCappedX() ? `\\text{ (capped at ${getCapX().toString()})}` : ""}`;
+  // \\dot{\\rho} = ${dotrho.toString(1)} 
+  return `${coshT.level > 0 ? `\\log(g(q_1q_2/c)) = ${getG()} \\qquad`: ''} x = ${x.toString(1)} ${isCappedX() ? `\\text{ (capped)}` : ""}`;
 }
 
 var tick = (elapsedTime, multiplier) => {
@@ -278,7 +288,7 @@ var tick = (elapsedTime, multiplier) => {
     // bx^2 -> 2bx
     BigNumber.TWO * getB() * x,
     // cx^3 -> 3cx^2
-    BigNumber.THREE * getC() * x.square() / (rho.value.max(BigNumber.TWO).log10() / BigNumber.from(1.1).log10())
+    BigNumber.THREE * getC() * x.square() / ((BigNumber.TWO + rho.value).log10() / BigNumber.from(1.1).log10())
   ];
   let sums = BigNumber.ZERO;
   terms.forEach(val => {sums += val});
@@ -310,28 +320,30 @@ var ach_2 = theory.createAchievementCategory(2,'other');
 var ach_s = theory.createAchievementCategory(3,'secret');
 
 
-var ach_x_1 = theory.createAchievement(100, ach_0, "min(x,cap)", "reach x's cap", isCappedX);
-var ach_x_2 = theory.createAchievement(101, ach_0, "hardcap is gone!", "increase x's cap", () => capX.level > 0);
-var ach_x_3 = theory.createAchievement(102, ach_0, "POWER", "reach x = 1e10", () => x >= BigNumber.from(1e10));
-var ach_x_4 = theory.createAchievement(103, ach_0, "even faster than light speed", "reach x = 1e15", () => x >= BigNumber.from(1e15));
-var ach_x_5 = theory.createAchievement(104, ach_0, "e'X'ponential growth", "reach x = 1e50", () => x >= BigNumber.from(1e50));
-var ach_x_6 = theory.createAchievement(105, ach_0, "it justs keep growing...", "reach x = 1e150", () => x >= BigNumber.from(1e150));
-var ach_x_7 = theory.createAchievement(106, ach_0, "No way, you can reach infinity?", "reach x = 1e200", () => x >= BigNumber.from(1e200));
-var ach_rho_1 = theory.createAchievement(200, ach_1, "f(x) = x^2", "reach 1e10 rho", () => rho.value >= BigNumber.from(1e10));
-var ach_rho_2 = theory.createAchievement(201, ach_1, "g(x) = 2^x", "reach 1e25 rho", () => rho.value >= BigNumber.from(1e25));
-var ach_rho_3 = theory.createAchievement(202, ach_1, "why did my rho explodes?", "reach 1e50 rho", () => rho.value >= BigNumber.from(1e50));
-var ach_rho_4 = theory.createAchievement(203, ach_1, "nice number", "reach 6.9e69 rho", () => rho.value >= BigNumber.from(6.9e69));
-var ach_rho_5 = theory.createAchievement(204, ach_1, "like jumping into the rocket", "reach 1e100 rho", () => rho.value >= BigNumber.from(1e100));
-var ach_rho_6 = theory.createAchievement(205, ach_1, "IT'S OVER CENTILLION!!!", "reach 1e303 rho", () => rho.value >= BigNumber.from('1e303'));
-var ach_rho_7 = theory.createAchievement(206, ach_1, "No way, you can reach eternity?", "reach 3.23e616 rho ((2^1024)^2)", () => rho.value >= BigNumber.TWO.pow(1024).pow(2));
-var ach_rho_8 = theory.createAchievement(207, ach_1, "I feel like it is decaying", "reach 1e500 rho", () => rho.value >= BigNumber.from('1e500'));
-var ach_rho_9 = theory.createAchievement(208, ach_1, "Googol to the power of ten", "reach 1e1000 rho", () => rho.value >= BigNumber.from('1e1000'));
-var ach_mile_1 = theory.createAchievement(301, ach_2, "DLC required", "unlock first milestone", () => rho.value >= BigNumber.from(1e20));
-var ach_mile_2 = theory.createAchievement(302, ach_2, "third alphabet", "unlock c", () => c.isAvailable);
-var ach_mile_3 = theory.createAchievement(303, ach_2, "what do you mean by cosh()?", "unlock cosh() term", () => q1.isAvailable);
-var ach_mile_4 = theory.createAchievement(304, ach_2, "Yeah I just broke the limit", "upgrade q2's max level", () => q2Cap.level > 0);
+var ach_x_1 = theory.createAchievement(100, ach_0, "X marks the spot", "reach the maximum value of x", isCappedX);
+var ach_x_2 = theory.createAchievement(101, ach_0, "Limit? What limit?", "increase x's cap", () => capX.level > 0);
+var ach_x_3 = theory.createAchievement(102, ach_0, "Even faster than light speed", "reach x = 1e10", () => x >= BigNumber.from(1e10));
+var ach_x_4 = theory.createAchievement(103, ach_0, "X-ponential idle", "reach x = 1e15", () => x >= BigNumber.from(1e15));
+var ach_x_5 = theory.createAchievement(104, ach_0, "X-celerating", "reach x = 1e50", () => x >= BigNumber.from(1e50));
+var ach_x_6 = theory.createAchievement(105, ach_0, "X-treme growth", "reach x = 1e150", () => x >= BigNumber.from(1e150));
+var ach_x_7 = theory.createAchievement(106, ach_0, "X-ceeds infinity?", "reach x = 1.79e308", () => x >= BigNumber.TWO.pow(1024));
 
-var ach_sec1 = theory.createSecretAchievement(1000,ach_s , 'I thought it would be useful', "Buy 100 level of c when rho > 1e500", "No progress", () => c.level >= 100 && rho.value >= BigNumber.from('1e500'));
+var ach_rho_1 = theory.createAchievement(200, ach_1, "Rocket fuel", "reach 1e10ρ", () => rho.value >= BigNumber.from(1e10));
+var ach_rho_2 = theory.createAchievement(201, ach_1, "Terminal velocity", "reach 1e25ρ", () => rho.value >= BigNumber.from(1e25));
+//var ach_rho_3 = theory.createAchievement(202, ach_1, "why did my rho explodes?", "reach 1e50 rho", () => rho.value >= BigNumber.from(1e50));
+var ach_rho_4 = theory.createAchievement(203, ach_1, "Nice.", "reach 6.9e69ρ", () => rho.value >= BigNumber.from(6.9e69));
+var ach_rho_5 = theory.createAchievement(204, ach_1, "The aρocalypse", "reach 1e100ρ", () => rho.value >= BigNumber.from(1e100));
+var ach_rho_6 = theory.createAchievement(205, ach_1, "IT'S OVER CENTILLION!!!", "reach 1e303ρ", () => rho.value >= BigNumber.from('1e303'));
+var ach_rho_7 = theory.createAchievement(206, ach_1, "No way, you can reach eternity?", "reach 3.23e616ρ", () => rho.value >= BigNumber.TWO.pow(2048));
+var ach_rho_8 = theory.createAchievement(207, ach_1, "Half-ρ decay", "reach 1e500ρ", () => rho.value >= BigNumber.from('1e500'));
+var ach_rho_9 = theory.createAchievement(208, ach_1, "Googolρlex?", "reach 1e1000ρ", () => rho.value >= BigNumber.from('1e1000'));
+
+var ach_mile_1 = theory.createAchievement(301, ach_2, "DLC required", "unlock first milestone", () => rho.value >= BigNumber.from(1e20));
+var ach_mile_2 = theory.createAchievement(302, ach_2, "A, B, ... C", "unlock c", () => c.isAvailable);
+var ach_mile_3 = theory.createAchievement(303, ach_2, "Hyperbolic hilarity", "unlock cosh() term", () => q1.isAvailable);
+var ach_mile_4 = theory.createAchievement(304, ach_2, "Limit? What is limit?", "upgrade q2's max level", () => q2Cap.level > 0);
+
+var ach_sec1 = theory.createSecretAchievement(1000,ach_s , 'I thought it would be useful', "Perform a reset 5 times in the same publication", "No progress", () => resetCount >= 5);
 
 
 
@@ -339,7 +351,8 @@ var ach_sec1 = theory.createSecretAchievement(1000,ach_s , 'I thought it would b
 init();
 
 var canResetStage = () => isMaxRhoOver('1e50');
-var getResetStageMessage = () => `You can perform a reset when your rho is stuck. You WILL NOT get any award IF your current tau value is lower than pevious publication's.`
+var getResetStageMessage = () => `You can perform a reset when your rho is stuck. You WILL NOT get any award IF your current tau value is lower than pevious publication's value.`
+
 var resetStage = () => {
   if (theory.canPublish) {
     theory.publish();
@@ -352,4 +365,5 @@ var resetStage = () => {
   postPublish();
 
   theory.clearGraph();
+  resetCount += 1;
 }
