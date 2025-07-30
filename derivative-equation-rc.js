@@ -5,7 +5,7 @@ import { QuaternaryEntry, theory } from "./api/Theory";
 import { Utils } from "./api/Utils";
 
 var id = "derivative_equation";
-var name = "Derivative Equation (RC1)";
+var name = "Derivative Equation (RC2)";
 var description = "Derivative Equation --\n\
 \n\
 x grows continuously over time,\n\
@@ -18,18 +18,19 @@ Optimize actively or progress passively?\n\
 Try to decide it on your own.\
 ";
 var authors = "skyhigh173";
-var version = 6;
+var version = 7;
 
 // currency
 var rho;
 var dotrho = BigNumber.ZERO;
 
 // upgrades
-var n,a0,a1,a2,a3;
+var n,a0,a1,a2,a3,m;
 
 // x (save)
 var x = BigNumber.ZERO;
 var t = BigNumber.ZERO;
+var q = BigNumber.ONE;
 var maxt = BigNumber.ZERO;
 var maxX;
 
@@ -38,7 +39,7 @@ var terms = [];
 //var debug2 = 0;
 
 // milestone
-var extraCap, nExp, unlockA, a0Exp;
+var extraCap, nExp, unlockA, a0Exp, qTerm;
 
 // secret
 var resetCount = 0;
@@ -50,10 +51,11 @@ var getA2 = (level=a2.level) => unlockA.level <= 0 ? BigNumber.ZERO : Utils.getS
 var getA3 = (level=a3.level) => unlockA.level <= 1 ? BigNumber.ZERO : Utils.getStepwisePowerSum(level, 1.1, 11, 0) / BigNumber.HUNDRED;
 
 var getN = (level=n.level) => BigNumber.TWO.pow(level * 0.3);
+var getM = (level=m.level) => BigNumber.TWO.pow(level - 256);
 var getNExp = () => BigNumber.from(1.2 - 0.6 * nExp.level);
 
 var getCapX = (level=maxX.level) => BigNumber.from(1024) * getExtraCapX().pow(level);
-var getExtraCapX = () => BigNumber.from(5 + extraCap.level * 3);
+var getExtraCapX = () => extraCap.level >= 6 ? BigNumber.from(15 + extraCap.level): BigNumber.from(5 + extraCap.level * 3);
 
 var isCappedX = () => x >= getCapX();
 var isMaxRhoOver = (over) => theory.tau >= BigNumber.from(over).pow(0.1);
@@ -67,11 +69,13 @@ var getCurrencyFromTau = (tau) => [tau.pow(10), rho.symbol];
 var variablePurchased = () => {
   x = BigNumber.ZERO;
   t = BigNumber.ZERO;
+  
   //debug = 0;
 }
 
 var postPublish = () => {
   variablePurchased();
+  q = BigNumber.ONE;
   //log(`pub time = ${debug2/60}min`)
   //debug2 = 0;
 }
@@ -81,13 +85,14 @@ var prePublish = () => {
 }
 
 var getInternalState = () => {
-  return `${x.toBase64String()} ${t.toBase64String()}`;
+  return `${x.toBase64String()} ${t.toBase64String()} ${q.toBase64String()}`;
 }
 
 var setInternalState = (state) => {
   state = state.split(" ");
   x = BigNumber.fromBase64String(state[0]);
   t = BigNumber.fromBase64String(state[1]);
+  q = BigNumber.fromBase64String(state[2]);
 }
 
 var init = () => {
@@ -102,10 +107,19 @@ var init = () => {
     n.getInfo = (amount) => Utils.getMathTo(getInfo(n.level), getInfo(n.level + amount));
     n.boughtOrRefunded = (_) => variablePurchased();
   }
+  // m
+  {
+    let getInfo = (level) => "m = " + getM(level).toString(2);
+    let getDesc = (level) => `m = 2^{${level-256}}`
+    m = theory.createUpgrade(1, rho, new ExponentialCost(1e200, Math.log2(1000)));
+    m.getDescription = (_) => Utils.getMath(getDesc(m.level));
+    m.getInfo = (amount) => Utils.getMathTo(getInfo(m.level), getInfo(m.level + amount));
+    m.boughtOrRefunded = (_) => { variablePurchased(); q = BigNumber.ONE; }
+  }
   // a0
   {
     let getDesc = (level) => "a_0 = " + getA0(level).toString(0);
-    a0 = theory.createUpgrade(10, rho, new FirstFreeCost(new ExponentialCost(3, Math.log2(1.6))));
+    a0 = theory.createUpgrade(10, rho, new FirstFreeCost(new ExponentialCost(3, Math.log2(1.4))));
     a0.getDescription = (_) => Utils.getMath(getDesc(a0.level));
     a0.getInfo = (amount) => Utils.getMathTo(getDesc(a0.level), getDesc(a0.level + amount));
     a0.boughtOrRefunded = (_) => variablePurchased();
@@ -121,7 +135,7 @@ var init = () => {
   // a2
   {
     let getDesc = (level) => "a_2 = " + getA2(level).toString(2);
-    a2 = theory.createUpgrade(12, rho, new ExponentialCost(1e85, Math.log2(35)));
+    a2 = theory.createUpgrade(12, rho, new ExponentialCost(1e85, Math.log2(20)));
     a2.getDescription = (_) => Utils.getMath(getDesc(a2.level));
     a2.getInfo = (amount) => Utils.getMathTo(getDesc(a2.level), getDesc(a2.level + amount));
     a2.boughtOrRefunded = (_) => variablePurchased();
@@ -130,7 +144,7 @@ var init = () => {
   // a3
   {
     let getDesc = (level) => "a_3 = " + getA2(level).toString(2);
-    a3 = theory.createUpgrade(13, rho, new ExponentialCost(1e300, Math.log2(40)));
+    a3 = theory.createUpgrade(13, rho, new ExponentialCost(1e200, Math.log2(80)));
     a3.getDescription = (_) => Utils.getMath(getDesc(a3.level));
     a3.getInfo = (amount) => Utils.getMathTo(getDesc(a3.level), getDesc(a3.level + amount));
     a3.boughtOrRefunded = (_) => variablePurchased();
@@ -139,7 +153,7 @@ var init = () => {
 
   {
     let getDesc = (level) => "\\max x = " + getCapX(level).toString(0);
-    maxX = theory.createUpgrade(20, rho, new CompositeCost(26,new ExponentialCost(1e7, 12),new ExponentialCost(1e101, 20)));
+    maxX = theory.createUpgrade(20, rho, new CompositeCost(26,new ExponentialCost(1e7, 12),new ExponentialCost(1e101, 19.5)));
     maxX.getDescription = (_) => Utils.getMath(getDesc(maxX.level));
     maxX.getInfo = (amount) => Utils.getMathTo(getDesc(maxX.level), getDesc(maxX.level + amount));
     maxX.boughtOrRefunded = (_) => variablePurchased();
@@ -160,14 +174,12 @@ var init = () => {
   */
 
   
-  let msCostFunc = new CompositeCost(7, new LinearCost(2,2.5), new CompositeCost(1, new LinearCost(25,10), new LinearCost(55,10)))
-  //theory.setMilestoneCost(new LinearCost(2, 2.5));
+  let msCostFunc = new CompositeCost(7, new LinearCost(2,2.5), new CompositeCost(2, new LinearCost(20,5), new LinearCost(55,10)))
   theory.setMilestoneCost(msCostFunc);
-  // 1e20, e25
 
     {
-      extraCap = theory.createMilestoneUpgrade(0, 4);
-      extraCap.description = Localization.getUpgradeIncCustomDesc("\\max x \\text{ base multiplier} ", "3");
+      extraCap = theory.createMilestoneUpgrade(0, 6);
+      extraCap.getDescription = () => Localization.getUpgradeIncCustomDesc("\\max x \\text{ base multiplier} ", extraCap.level >= 5 ? "1" : "3");
       extraCap.getInfo = () => `$\\max x = 1024 \\times ${getExtraCapX().toString(0)}^{\\text{level}}$`;
     }
     {
@@ -177,7 +189,7 @@ var init = () => {
       nExp.boughtOrRefunded = (_) => theory.invalidateSecondaryEquation();
     }
     {
-      unlockA = theory.createMilestoneUpgrade(2, 2);
+      unlockA = theory.createMilestoneUpgrade(2, 1);
       unlockA.getDescription = () => Localization.getUpgradeUnlockDesc(`a_${2+unlockA.level}`);
       unlockA.getInfo = () => Localization.getUpgradeUnlockInfo(`a_${2+unlockA.level}`);
       unlockA.boughtOrRefunded = (_) => theory.invalidatePrimaryEquation();
@@ -188,6 +200,12 @@ var init = () => {
       a0Exp.getInfo = () => Localization.getUpgradeIncCustomExpInfo("a_0",1);
       a0Exp.boughtOrRefunded = (_) => theory.invalidateSecondaryEquation();
     }
+    {
+      qTerm = theory.createMilestoneUpgrade(4, 1);
+      qTerm.getDescription = () => Localization.getUpgradeUnlockDesc(`q`);
+      qTerm.getInfo = () => Localization.getUpgradeUnlockInfo(`q`);
+      qTerm.boughtOrRefunded = (_) => { theory.invalidateSecondaryEquation(); q = BigNumber.ONE; }
+    }
 }
 
 var getPrimaryEquation = () => {
@@ -195,7 +213,7 @@ var getPrimaryEquation = () => {
   theory.primaryEquationScale = 1;
   
   let r = "\\begin{matrix}";
-  r += "\\frac{\\mathrm{d}\\rho}{\\mathrm{d}t} = n \\mathbf{F}'(x; a)\\\\\\\\";
+  r += `\\frac{\\mathrm{d}\\rho}{\\mathrm{d}t} = n ${qTerm.level > 0 ? "\\sqrt[10]{q}" : ""} \\mathbf{F}'(x; a)\\\\\\\\`;
   r += "\\mathbf{F}(x;v)=\\sum_{k=0} v_k x^{k+1}";
   r += "\\end{matrix}";
 
@@ -206,11 +224,12 @@ var getSecondaryEquation = () => {
   let nExp = getNExp();
   let nExpText = "a_0" + (a0Exp.level > 0 ? `^{${1+a0Exp.level}}` : "") + (nExp == BigNumber.ZERO ? "" : `n^{-${nExp.toString(1)}}`);
   let r = `\\frac{\\mathrm{d}x}{\\mathrm{d}t} = n \\ln\\left(${nExpText}+e\\right)`;
-  r += `\\qquad ${theory.latexSymbol} = \\max \\rho^{0.1}`;
+  if (qTerm.level > 0) r += `\\qquad \\frac{\\mathrm{d}q}{\\mathrm{d}t}=\\frac{mxa_1}{1+t}`;
   return r;
 }
 var getTertiaryEquation = () => {
-  return `\\quad t = ${t.toString(1)} \\quad x = ${x.toString(1)} ${isCappedX() ? `\\text{ (capped)}` : ""}`;
+  let qText =  qTerm.level > 0 ? `\\quad q = ${q.toString(1)}` : "";
+  return `${theory.latexSymbol} = \\max \\rho^{0.1} \\quad t = ${t.toString(1)} \\quad x = ${x.toString(1)} ${isCappedX() ? `\\text{ (capped)}` : ""} ${qText}`;
 }
 
 var tick = (elapsedTime, multiplier) => {
@@ -233,7 +252,7 @@ var tick = (elapsedTime, multiplier) => {
   terms.forEach(val => {sums += val});
   // log(10+d/dx cosh(x)) : log(10+(exp(x)-exp(-x))/2)
   
-  dotrho = sums * getN();
+  dotrho = sums * getN() * (qTerm.level > 0 ? q.pow(1/10) : BigNumber.ONE);
   rho.value += dotrho * dt * bonus;
   if (a0.level > 0) t += dt * bonus;
   if (t > maxt) maxt = t;
@@ -243,6 +262,7 @@ var tick = (elapsedTime, multiplier) => {
     if (isCappedX()) {
       x = getCapX();
     }
+    if (qTerm.level > 0) q += (getA1() * x * getM()) / (BigNumber.ONE + t) * dt;
   }
 
   theory.invalidateTertiaryEquation();
@@ -280,20 +300,11 @@ var ach_sec1 = theory.createSecretAchievement(1000,ach_s , 'I thought it would b
 
 init();
 
-var canResetStage = () => isMaxRhoOver('1e50');
-var getResetStageMessage = () => `You can perform a reset when your rho is stuck.`
+var canResetStage = () => qTerm.level > 0;
+var getResetStageMessage = () => `You can perform a t reset when your progress is stuck.`
 
 var resetStage = () => {
-  if (theory.canPublish) {
-    theory.publish();
-    return;
-  }
-  for (let i = 0; i < theory.upgrades.length; i++) {
-    theory.upgrades[i].level = 0;
-  }
-  rho.value = 0;
-  postPublish();
-
-  theory.clearGraph();
+  variablePurchased();
+  q = BigNumber.ONE;
   resetCount += 1;
 }
