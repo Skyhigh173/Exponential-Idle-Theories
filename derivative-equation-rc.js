@@ -3,9 +3,10 @@ import { Localization } from "./api/Localization";
 import { BigNumber } from "./api/BigNumber";
 import { QuaternaryEntry, theory } from "./api/Theory";
 import { Utils } from "./api/Utils";
+import { existsSync } from "fs";
 
 var id = "derivative_equation";
-var name = "Derivative Equation (RC2)";
+var name = "Derivative Equation (RC3)";
 var description = "Derivative Equation --\n\
 \n\
 x grows continuously over time,\n\
@@ -18,7 +19,7 @@ Optimize actively or progress passively?\n\
 Try to decide it on your own.\
 ";
 var authors = "skyhigh173";
-var version = 7;
+var version = 8;
 
 // currency
 var rho;
@@ -32,11 +33,11 @@ var x = BigNumber.ZERO;
 var t = BigNumber.ZERO;
 var q = BigNumber.ONE;
 var maxt = BigNumber.ZERO;
-var maxX;
+var maxX, maxXPermCap;
 
 var terms = [];
 //var debug = 0;
-//var debug2 = 0;
+var debug2 = 0;
 
 // milestone
 var extraCap, nExp, unlockA, a0Exp, qTerm;
@@ -76,8 +77,8 @@ var variablePurchased = () => {
 var postPublish = () => {
   variablePurchased();
   q = BigNumber.ONE;
-  //log(`pub time = ${debug2/60}min`)
-  //debug2 = 0;
+  log(`pub time = ${debug2/60}min at ${theory.tau.pow(10)}`)
+  debug2 = 0;
 }
 
 var prePublish = () => {
@@ -164,21 +165,21 @@ var init = () => {
   buyAllUpg = theory.createBuyAllUpgrade(1, rho, 1e20);
   autoUpg = theory.createAutoBuyerUpgrade(2, rho, 1e40);
 
-  /*
-  milestone cost (rho) :
-  e20 , e45 , e70 ,     -> x mul
-  e95 , e120, e145,     -> n exp
-  e170, e250, e550      -> 
-  e650, e750, e850,     -> 
-  e950, 1050, 1150      -> 
-  */
+  {
+    let getDesc = (level) => "\\max x \\text{ base multiplier level cap} = " + (level + 6);
+    maxXPermCap = theory.createPermanentUpgrade(3, rho, new CustomCost(lv => [BigNumber.from('1e300'), BigNumber.from('1e400'), BigNumber.from('1e500')][lv]));
+    maxXPermCap.getDescription = (_) => Utils.getMath(getDesc(maxXPermCap.level));
+    maxXPermCap.getInfo = (amount) => Utils.getMathTo(getDesc(maxXPermCap.level), maxXPermCap.level + 7);
+    maxXPermCap.maxLevel = 3;
+  }
 
-  
-  let msCostFunc = new CompositeCost(7, new LinearCost(2,2.5), new CompositeCost(2, new LinearCost(20,5), new LinearCost(55,10)))
+
+  let msCostFunc = new CustomCost(lv => BigNumber.from([2, 4.5, 7, 10, 12.5, 15, 17.5, 20, 22.5, 25, 40, 50, 10000, 10001, 10001, 10001][lv]));
+  //let msCostFunc = new CompositeCost(7, new LinearCost(2,2.5), new CompositeCost(2, new LinearCost(20,5), new LinearCost(55,10)))
   theory.setMilestoneCost(msCostFunc);
 
     {
-      extraCap = theory.createMilestoneUpgrade(0, 6);
+      extraCap = theory.createMilestoneUpgrade(0, 10);
       extraCap.getDescription = () => Localization.getUpgradeIncCustomDesc("\\max x \\text{ base multiplier} ", extraCap.level >= 5 ? "1" : "3");
       extraCap.getInfo = () => `$\\max x = 1024 \\times ${getExtraCapX().toString(0)}^{\\text{level}}$`;
     }
@@ -234,7 +235,7 @@ var getTertiaryEquation = () => {
 
 var tick = (elapsedTime, multiplier) => {
   //debug += elapsedTime * 10;
-  //debug2 += elapsedTime * 10;
+  //debug2 += elapsedTime * 30;
   let dt = BigNumber.from(elapsedTime * multiplier);
   let bonus = theory.publicationMultiplier;
 
@@ -270,6 +271,7 @@ var tick = (elapsedTime, multiplier) => {
   a0Exp.isAvailable = isMaxRhoOver(1e150);
   a2.isAvailable = unlockA.level > 0;
   a3.isAvailable = unlockA.level > 1;
+  extraCap.maxLevel = 6 + maxXPermCap.level;
 }
 
 var ach_0 = theory.createAchievementCategory(0,'x');
@@ -301,7 +303,7 @@ var ach_sec1 = theory.createSecretAchievement(1000,ach_s , 'I thought it would b
 init();
 
 var canResetStage = () => qTerm.level > 0;
-var getResetStageMessage = () => `You can perform a t reset when your progress is stuck.`
+var getResetStageMessage = () => `You can perform a t & q reset when your progress is stuck.`
 
 var resetStage = () => {
   variablePurchased();
