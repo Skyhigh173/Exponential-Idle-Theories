@@ -6,7 +6,7 @@ import { Utils } from "./api/Utils";
 import { existsSync } from "fs";
 
 var id = "derivative_equation";
-var name = "Derivative Equation (RC3)";
+var name = "Derivative Equation (RC4)";
 var description = "Derivative Equation --\n\
 \n\
 x grows continuously over time,\n\
@@ -19,14 +19,14 @@ Optimize actively or progress passively?\n\
 Try to decide it on your own.\
 ";
 var authors = "skyhigh173";
-var version = 8;
+var version = 9;
 
 // currency
 var rho;
 var dotrho = BigNumber.ZERO;
 
 // upgrades
-var n,a0,a1,a2,a3,m;
+var n,a0,a1,a2,m;
 
 // x (save)
 var x = BigNumber.ZERO;
@@ -49,14 +49,13 @@ var resetCount = 0;
 var getA0 = (level=a0.level) => Utils.getStepwisePowerSum(level, 2.2, 5, 0);
 var getA1 = (level=a1.level) => Utils.getStepwisePowerSum(level, 3, 7, 0);
 var getA2 = (level=a2.level) => unlockA.level <= 0 ? BigNumber.ZERO : Utils.getStepwisePowerSum(level, 1.5, 11, 0) / BigNumber.TEN;
-var getA3 = (level=a3.level) => unlockA.level <= 1 ? BigNumber.ZERO : Utils.getStepwisePowerSum(level, 1.1, 11, 0) / BigNumber.HUNDRED;
 
 var getN = (level=n.level) => BigNumber.TWO.pow(level * 0.3);
 var getM = (level=m.level) => BigNumber.TWO.pow(level - 256);
 var getNExp = () => BigNumber.from(1.2 - 0.6 * nExp.level);
 
 var getCapX = (level=maxX.level) => BigNumber.from(1024) * getExtraCapX().pow(level);
-var getExtraCapX = () => extraCap.level >= 6 ? BigNumber.from(15 + extraCap.level): BigNumber.from(5 + extraCap.level * 3);
+var getExtraCapX = () => extraCap.level >= 10 ? BigNumber.from(19.5 + extraCap.level/2) : (extraCap.level >= 6 ? BigNumber.from(15 + extraCap.level): BigNumber.from(5 + extraCap.level * 3));
 
 var isCappedX = () => x >= getCapX();
 var isMaxRhoOver = (over) => theory.tau >= BigNumber.from(over).pow(0.1);
@@ -110,7 +109,7 @@ var init = () => {
   }
   // m
   {
-    let getInfo = (level) => "m = " + getM(level).toString(2);
+    let getInfo = (level) => "m = " + (level < 256 ? "1/" + BigNumber.TWO.pow(256-level).toString(2): getM(level).toString(2));
     let getDesc = (level) => `m = 2^{${level-256}}`
     m = theory.createUpgrade(1, rho, new ExponentialCost(1e200, Math.log2(1000)));
     m.getDescription = (_) => Utils.getMath(getDesc(m.level));
@@ -120,7 +119,7 @@ var init = () => {
   // a0
   {
     let getDesc = (level) => "a_0 = " + getA0(level).toString(0);
-    a0 = theory.createUpgrade(10, rho, new FirstFreeCost(new ExponentialCost(3, Math.log2(1.4))));
+    a0 = theory.createUpgrade(10, rho, new CompositeCost(4378, new FirstFreeCost(new ExponentialCost(3, Math.log2(1.4))), new ExponentialCost(BigNumber.from('1e640'), Math.log2(5))));
     a0.getDescription = (_) => Utils.getMath(getDesc(a0.level));
     a0.getInfo = (amount) => Utils.getMathTo(getDesc(a0.level), getDesc(a0.level + amount));
     a0.boughtOrRefunded = (_) => variablePurchased();
@@ -142,15 +141,6 @@ var init = () => {
     a2.boughtOrRefunded = (_) => variablePurchased();
     a2.isAvailable = false;
   }
-  // a3
-  {
-    let getDesc = (level) => "a_3 = " + getA2(level).toString(2);
-    a3 = theory.createUpgrade(13, rho, new ExponentialCost(1e200, Math.log2(80)));
-    a3.getDescription = (_) => Utils.getMath(getDesc(a3.level));
-    a3.getInfo = (amount) => Utils.getMathTo(getDesc(a3.level), getDesc(a3.level + amount));
-    a3.boughtOrRefunded = (_) => variablePurchased();
-    a3.isAvailable = false;
-  }
 
   {
     let getDesc = (level) => "\\max x = " + getCapX(level).toString(0);
@@ -166,22 +156,23 @@ var init = () => {
   autoUpg = theory.createAutoBuyerUpgrade(2, rho, 1e40);
 
   {
+    const maxXPermCapCost = ['1e300', '1e400', '1e500', '1e700', '1e825', '1e1000', '1e1250'];
     let getDesc = (level) => "\\max x \\text{ base multiplier level cap} = " + (level + 6);
-    maxXPermCap = theory.createPermanentUpgrade(3, rho, new CustomCost(lv => [BigNumber.from('1e300'), BigNumber.from('1e400'), BigNumber.from('1e500')][lv]));
+    maxXPermCap = theory.createPermanentUpgrade(3, rho, new CustomCost(lv => BigNumber.from(maxXPermCapCost[lv] ?? '1e1000000')));
     maxXPermCap.getDescription = (_) => Utils.getMath(getDesc(maxXPermCap.level));
     maxXPermCap.getInfo = (amount) => Utils.getMathTo(getDesc(maxXPermCap.level), maxXPermCap.level + 7);
-    maxXPermCap.maxLevel = 3;
+    maxXPermCap.maxLevel = maxXPermCapCost.length;
   }
 
 
-  let msCostFunc = new CustomCost(lv => BigNumber.from([2, 4.5, 7, 10, 12.5, 15, 17.5, 20, 22.5, 25, 40, 50, 10000, 10001, 10001, 10001][lv]));
-  //let msCostFunc = new CompositeCost(7, new LinearCost(2,2.5), new CompositeCost(2, new LinearCost(20,5), new LinearCost(55,10)))
+  let msCostFunc = new CustomCost(lv => BigNumber.from([2, 4.5, 7, 10, 12.5, 15, 17.5, 20, 22.5, 25, 37.5, 47.5, 70, 82.5, 90, 95, 100, 110, 125, 140, 1000000][lv]));
+  //let msCostFunc = new FreeCost();
   theory.setMilestoneCost(msCostFunc);
 
     {
       extraCap = theory.createMilestoneUpgrade(0, 10);
-      extraCap.getDescription = () => Localization.getUpgradeIncCustomDesc("\\max x \\text{ base multiplier} ", extraCap.level >= 5 ? "1" : "3");
-      extraCap.getInfo = () => `$\\max x = 1024 \\times ${getExtraCapX().toString(0)}^{\\text{level}}$`;
+      extraCap.getDescription = () => Localization.getUpgradeIncCustomDesc("\\max x \\text{ base multiplier} ", extraCap.level >= 9 ? "0.5" : (extraCap.level >= 5 ? "1" : "3"));
+      extraCap.getInfo = () => `$\\max x = 1024 \\times ${getExtraCapX().toString(1)}^{\\text{level}}$`;
     }
     {
       nExp = theory.createMilestoneUpgrade(1, 2);
@@ -235,7 +226,7 @@ var getTertiaryEquation = () => {
 
 var tick = (elapsedTime, multiplier) => {
   //debug += elapsedTime * 10;
-  //debug2 += elapsedTime * 30;
+  //debug2 += elapsedTime * 60;
   let dt = BigNumber.from(elapsedTime * multiplier);
   let bonus = theory.publicationMultiplier;
 
@@ -246,8 +237,6 @@ var tick = (elapsedTime, multiplier) => {
     BigNumber.TWO * getA1() * x,
     // cx^3 -> 3cx^2
     unlockA.level == 0 ? BigNumber.ZERO : BigNumber.THREE * getA2() * x.square(),
-    // dx^4 -> 4dx^3
-    unlockA.level <= 1 ? BigNumber.ZERO : BigNumber.FOUR * getA3() * x.pow(3)
   ];
   let sums = BigNumber.ZERO;
   terms.forEach(val => {sums += val});
@@ -269,8 +258,9 @@ var tick = (elapsedTime, multiplier) => {
   theory.invalidateTertiaryEquation();
   unlockA.isAvailable = isMaxRhoOver(1e80);
   a0Exp.isAvailable = isMaxRhoOver(1e150);
+  qTerm.isAvailable = isMaxRhoOver(1e200);
   a2.isAvailable = unlockA.level > 0;
-  a3.isAvailable = unlockA.level > 1;
+  m.isAvailable = qTerm.level > 0;
   extraCap.maxLevel = 6 + maxXPermCap.level;
 }
 
