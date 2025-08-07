@@ -5,7 +5,7 @@ import { QuaternaryEntry, theory } from "./api/Theory";
 import { Utils } from "./api/Utils";
 
 var id = "derivative_equation";
-var name = "Derivative Equation (RC5)";
+var name = "Derivative Equation (RC6)";
 var description = "Derivative Equation --\n\
 \n\
 x grows continuously over time,\n\
@@ -18,7 +18,7 @@ Optimize actively or progress passively?\n\
 Try to decide it on your own.\
 ";
 var authors = "skyhigh173";
-var version = 10;
+var version = 11;
 
 // currency
 var rho;
@@ -149,7 +149,7 @@ var init = () => {
   autoUpg = theory.createAutoBuyerUpgrade(2, rho, 1e40);
 
   {
-    const maxXPermCapCost = ['1e300', '1e400', '1e500', '1e700', '1e825', '1e1000', '1e1250'];
+    const maxXPermCapCost = ['1e400', '1e500', '1e650', '1e900', '1e1050', '1e1250', '1e1500'];
     let getDesc = (level) => "\\max x \\text{ base multiplier level cap} = " + (level + 6);
     maxXPermCap = theory.createPermanentUpgrade(3, rho, new CustomCost(lv => BigNumber.from(maxXPermCapCost[lv] ?? '1e1000000')));
     maxXPermCap.getDescription = (_) => Utils.getMath(getDesc(maxXPermCap.level));
@@ -208,8 +208,8 @@ var getSecondaryEquation = () => {
   theory.secondaryEquationScale = 0.95;
   let nExp = getNExp();
   let nExpText = "a_0" + (a0Exp.level > 0 ? `^{${1+a0Exp.level}}` : "") + (nExp == BigNumber.ZERO ? "" : `n^{-${nExp.toString(1)}}`);
-  let r = `\\frac{\\mathrm{d}x}{\\mathrm{d}t} = n \\ln\\left(${nExpText}+e\\right)`;
-  if (qTerm.level > 0) r += `\\qquad \\frac{\\mathrm{d}q}{\\mathrm{d}t}=\\frac{mxa_1}{1+t}`;
+  let r = `\\frac{\\mathrm{d}x}{\\mathrm{d}rt} = n \\ln\\left(${nExpText}+e\\right)`;
+  if (qTerm.level > 0) r += `\\qquad \\frac{\\mathrm{d}q}{\\mathrm{d}rt}=\\frac{mxa_1}{1+t}`;
   return r;
 }
 
@@ -279,13 +279,13 @@ var ach_rho_8 = theory.createAchievement(208, ach_1, "Googolρlex? Not yet.", "r
 var ach_rho_9 = theory.createAchievement(209, ach_1, "The end.", "reach 1e1500ρ", () => rho.value >= BigNumber.from('1e1500'));
 
 var ach_sec1 = theory.createSecretAchievement(1000, ach_s , 'I thought it would be useful', "Perform a reset 5 times in the same publication", "No progress", () => resetCount >= 5);
-var ach_sec2 = theory.createSecretAchievement(1001, ach_s , 'Why are you still here?', "reach 1e1750ρ", "Progress", () => rho.value >= BigNumber.from('1e1750')); // might be hard to get
+var ach_sec2 = theory.createSecretAchievement(1001, ach_s , 'Why are you still here?', "reach 1e2000ρ", "Progress", () => rho.value >= BigNumber.from('1e2000')); // might be hard to get
 
 
 init();
 
 var canResetStage = () => qTerm.level > 0;
-var getResetStageMessage = () => `You can perform a t & q reset when your progress is stuck.`
+var getResetStageMessage = () => `You can perform t & q reset when your progress is stuck.`
 
 var resetStage = () => {
   variablePurchased();
