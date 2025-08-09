@@ -5,7 +5,7 @@ import { QuaternaryEntry, theory } from "./api/Theory";
 import { Utils } from "./api/Utils";
 
 var id = "derivative_equation";
-var name = "Derivative Equation (RC6)";
+var name = "Derivative Equation (RC7)";
 var description = "Derivative Equation --\n\
 \n\
 x grows continuously over time,\n\
@@ -18,7 +18,7 @@ Optimize actively or progress passively?\n\
 Try to decide it on your own.\
 ";
 var authors = "skyhigh173";
-var version = 11;
+var version = 12;
 
 // currency
 var rho;
@@ -168,8 +168,8 @@ var init = () => {
     }
     {
       nExp = theory.createMilestoneUpgrade(1, 2);
-      nExp.getDescription = () => Localization.getUpgradeIncCustomExpDesc("n",0.6) + " in d$x$/d$t$ term";
-      nExp.getInfo = () => nExp.level == 1 ? "remove $n$ in $\\dot{x}$ term" : "increases $n$ exponent by $0.6$ in d$x$/d$t$ term"
+      nExp.getDescription = () => Localization.getUpgradeIncCustomExpDesc("n",0.6) + " in d$x$/d$rt$ term";
+      nExp.getInfo = () => nExp.level == 1 ? "remove $n$ in d$x$/d$rt$ term" : "increases $n$ exponent by $0.6$ in d$x$/d$rt$ term"
       nExp.boughtOrRefunded = (_) => theory.invalidateSecondaryEquation();
     }
     {
@@ -263,7 +263,7 @@ var ach_s = theory.createAchievementCategory(3,'secret');
 var ach_x_1 = theory.createAchievement(100, ach_0, "Overflow", "reach the maximum value of x", isCappedX);
 var ach_x_2 = theory.createAchievement(101, ach_0, "Limit? What limit?", "increase x's cap", () => maxX.level > 0);
 var ach_x_3 = theory.createAchievement(102, ach_0, "Even faster than light speed", "reach x = 1e10", () => x >= BigNumber.from(1e10));
-var ach_x_4 = theory.createAchievement(103, ach_0, "xponential idle", "reach x = 1e15", () => x >= BigNumber.from(1e15));
+var ach_x_4 = theory.createAchievement(103, ach_0, "xponential idle", "reach x = 1e25", () => x >= BigNumber.from(1e15));
 var ach_x_5 = theory.createAchievement(104, ach_0, "xcelerating", "reach x = 1e50", () => x >= BigNumber.from(1e50));
 var ach_x_6 = theory.createAchievement(105, ach_0, "xtreme growth", "reach x = 1e150", () => x >= BigNumber.from(1e150));
 var ach_x_7 = theory.createAchievement(106, ach_0, "xceeds infinity?", "reach x = 1.79e308", () => x >= BigNumber.TWO.pow(1024));
@@ -285,10 +285,12 @@ var ach_sec2 = theory.createSecretAchievement(1001, ach_s , 'Why are you still h
 init();
 
 var canResetStage = () => qTerm.level > 0;
-var getResetStageMessage = () => `You can perform t & q reset when your progress is stuck.`
+var getResetStageMessage = () => `You can perform a publication reset when your progress is stuck. Your progress in this publication will be lost.`
 
 var resetStage = () => {
   variablePurchased();
   q = BigNumber.ONE;
+  rho.value = BigNumber.ZERO;
+  n.level = m.level = a0.level = a1.level = a2.level = maxX.level = 0;
   resetCount += 1;
 }
